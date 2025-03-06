@@ -1,0 +1,14 @@
+body{
+    background-color: rgb(57, 57, 57);
+}
+
+.canvas_container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 100px;
+}
+
+#canvas {
+    background-color: black;
+}
