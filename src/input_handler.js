@@ -1,5 +1,7 @@
 import { keys, camera, mouse, clock } from './vars.js'
 
+const mouse_x_factor = 0.0025
+
 onkeydown = e => inputHandler(e.key.toLowerCase(), true)
 onkeyup = e => inputHandler(e.key.toLowerCase(), false)
 onmousemove = e => mouseHandler(e)
@@ -11,7 +13,7 @@ const inputHandler = (key, is_down) => {
 
 const mouseHandler = e => {
     if (document.pointerLockElement){
-        camera.rotation.x += e.movementX * 0.0025 * mouse.sensitivity
+        camera.rotation.x += e.movementX * mouse_x_factor * mouse.sensitivity
         camera.rotation.y -= e.movementY * mouse.sensitivity
 
         camera.rotation.x = (camera.rotation.x + Math.PI * 2) % (Math.PI * 2)
