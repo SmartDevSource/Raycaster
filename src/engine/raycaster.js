@@ -1,9 +1,10 @@
-import { map } from './map.js'
-import { draw2dLine, drawCircle } from './utils/draw.js'
-import { images } from './resources/images.js'
-import { camera, screen_resolution, clock, radians_fov, width_fov } from './vars.js'
-import { inputListener } from './input_handler.js'
-import { loadResources } from './resources/resources_handler.js'
+import { map } from '../map.js'
+import { draw2dLine, drawCircle } from '../utils/draw.js'
+import { images } from '../resources/images.js'
+import { screen_resolution, clock, radians_fov, width_fov } from '../vars.js'
+import { camera } from './camera.js'
+import { inputListener } from '../input_handler.js'
+import { loadResources } from '../resources/resources_handler.js'
 
 const canvas = document.getElementById('canvas')
 const ctx = canvas.getContext('2d')
@@ -62,12 +63,6 @@ const drawFloor = () => {
         floor_height
     )
 }
-const getWallHeight = (wall_type) => {
-    switch(wall_type){
-        case 'w': return 1
-        case 't': return 50
-    }
-}
 const drawCamera = () => {
     const half_screen = {
         x: canvas.width / 2,
@@ -117,7 +112,7 @@ const drawCamera = () => {
                 map_y += step_y
                 side = 1
             }
-            if (!map.tiles[map_y][map_x].startsWith('_')){
+            if (map.tiles[map_y][map_x].startsWith('w')){
                 tile_content = map.tiles[map_y][map_x]
                 hit = true
             }
@@ -131,7 +126,6 @@ const drawCamera = () => {
 
         const x_wall = (canvas.width - w)
         const height_projection = (canvas.height / corrected_distance) * 1
-        const wall_height = getWallHeight(tile_content[0])
         const top_wall = (half_screen.y - height_projection) + camera.rotation.y
         const bottom_wall = (half_screen.y + height_projection) + camera.rotation.y
 
@@ -146,11 +140,11 @@ const drawCamera = () => {
             current_texture.img,
             texture_offset, 0,
             1, current_texture.img.height,
-            x_wall, top_wall - wall_height,
-            1, bottom_wall - top_wall + wall_height
+            x_wall, top_wall,
+            1, bottom_wall - top_wall
         )
 
-        const fog = corrected_distance / map.fog
+        const fog = corrected_distance / camera.fog
         ctx.fillStyle = `rgba(0, 0, 0, ${fog})`
         ctx.fillRect(
             x_wall, top_wall - 1,

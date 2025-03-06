@@ -1,4 +1,6 @@
-import { keys, camera, mouse, clock } from './vars.js'
+import { keys, mouse, clock } from './vars.js'
+import { camera } from './engine/camera.js'
+import { map } from './map.js'
 
 const mouse_x_factor = 0.0025
 
@@ -26,20 +28,55 @@ const mouseHandler = e => {
 }
 
 export const inputListener = () => {
+    let next_velocity = {x: 0, y: 0}
     if (keys.z){
-        camera.position.x += (camera.speed_move * Math.cos(camera.rotation.x)) * clock.delta_time
-        camera.position.y += (camera.speed_move * Math.sin(camera.rotation.x)) * clock.delta_time
+        next_velocity.x = (camera.speed_move * Math.cos(camera.rotation.x)) * clock.delta_time
+        next_velocity.y = (camera.speed_move * Math.sin(camera.rotation.x)) * clock.delta_time
     }
     if (keys.s){
-        camera.position.x -= (camera.speed_move * Math.cos(camera.rotation.x)) * clock.delta_time
-        camera.position.y -= (camera.speed_move * Math.sin(camera.rotation.x)) * clock.delta_time
+        next_velocity.x = -(camera.speed_move * Math.cos(camera.rotation.x)) * clock.delta_time
+        next_velocity.y = -(camera.speed_move * Math.sin(camera.rotation.x)) * clock.delta_time
     }
     if (keys.q){
-        camera.position.x -= (camera.speed_move * Math.cos(camera.rotation.x + (Math.PI / 2))) * clock.delta_time
-        camera.position.y -= (camera.speed_move * Math.sin(camera.rotation.x + (Math.PI / 2))) * clock.delta_time
+        next_velocity.x -= (camera.speed_move * Math.cos(camera.rotation.x + (Math.PI / 2))) * clock.delta_time
+        next_velocity.y -= (camera.speed_move * Math.sin(camera.rotation.x + (Math.PI / 2))) * clock.delta_time
     }
     if (keys.d){
-        camera.position.x -= (camera.speed_move * Math.cos(camera.rotation.x - (Math.PI / 2))) * clock.delta_time
-        camera.position.y -= (camera.speed_move * Math.sin(camera.rotation.x - (Math.PI / 2))) * clock.delta_time
+        next_velocity.x -= -(camera.speed_move * Math.cos(camera.rotation.x + (Math.PI / 2))) * clock.delta_time
+        next_velocity.y -= -(camera.speed_move * Math.sin(camera.rotation.x + (Math.PI / 2))) * clock.delta_time
     }
+    if (keys['+']){
+        camera.fog += 1
+    }
+    if (keys['-']){
+        camera.fog -= 1
+    }
+
+    const new_x = camera.position.x + next_velocity.x
+    const new_y = camera.position.y + next_velocity.y    
+
+    if (!checkCollision(new_x, camera.position.y)){
+        camera.position.x = new_x
+    }
+    if (!checkCollision(camera.position.x, new_y)){
+        camera.position.y = new_y
+    }
+}
+
+const checkCollision = (x, y) => {
+    const check_points = [
+        {x: x + camera.radius, y},
+        {x: x - camera.radius, y},
+        {x, y: y + camera.radius},
+        {x, y: y - camera.radius}
+    ]
+    return check_points.some(p => getMapCell(p.y, p.x).startsWith('w'))
+}
+
+const getMapCell = (y, x) => {
+    const y_grid = Math.floor(y / map.grid_offset)
+    const x_grid = Math.floor(x / map.grid_offset)
+    if (x_grid === -1 || y_grid === -1)
+        return 'w'
+    return map.tiles[y_grid][x_grid]
 }
