@@ -1,25 +1,7 @@
-import { clock } from "../structs.js"
+import { clock, switch_state, current_item, weapon_bobbing } from "../structs.js"
 import { camera } from "./camera.js"
 import { hud_items } from "../resources/hud_items.js"
 
-const switch_state = {
-    switched: false,
-    angle: -1,
-    speed: 3
-}
-
-const current_item = {
-    name: '',
-    image: new Image(),
-    frame_width: 0,
-    data: {}
-}
-
-const weapon_bobbing = {
-    angle: 0,
-    speed: 5,
-    length: 20
-}
 
 export const drawCircle = (ctx, position, radius, color) => {
     ctx.beginPath()

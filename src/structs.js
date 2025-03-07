@@ -34,3 +34,22 @@ export const lighter = {
         max: .05
     }
 }
+
+export const switch_state = {
+    switched: false,
+    angle: -1,
+    speed: 3
+}
+
+export const current_item = {
+    name: '',
+    image: new Image(),
+    frame_width: 0,
+    data: {}
+}
+
+export const weapon_bobbing = {
+    angle: 0,
+    speed: 5,
+    length: 20
+}
