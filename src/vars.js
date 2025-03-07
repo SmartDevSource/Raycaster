@@ -26,3 +26,14 @@ export const sparkling = {
     next: null,
     times: 0
 }
+
+export const lighter = {
+    intensity: 0,
+    treshold: .1,
+    flickering: {
+        value: 0,
+        speed: 1,
+        min: 0,
+        max: .05
+    }
+}

@@ -1,7 +1,7 @@
 import { map } from '../map.js'
-import { draw2dLine, drawCircle, drawHud } from '../utils/draw.js'
+import { draw2dLine, drawCircle, drawHud } from './draw.js'
 import { images } from '../resources/images.js'
-import { screen_resolution, clock, radians_fov, width_fov, sparkling } from '../vars.js'
+import { screen_resolution, clock, radians_fov, width_fov, sparkling, lighter } from '../vars.js'
 import { camera } from './camera.js'
 import { inputListener } from '../input_handler.js'
 import { loadResources } from '../resources/resources_handler.js'
@@ -55,11 +55,37 @@ const draw2dMap = () => {
     )
     ctx.restore()
 }
+const drawSky = () => {
+    const skybox = images.skyboxes[map.skybox].img
+    const sky_width = skybox.width
+    const sky_height = skybox.height
+
+    const offset = {
+        x: (-camera.rotation.x / Math.PI) * sky_width, 
+        y: -(sky_height / 2) + camera.rotation.y
+    }
+    offset.x = (offset.x % sky_width + sky_width) % sky_width
+    
+    ctx.drawImage(skybox, offset.x, offset.y)
+
+    if (offset.x > 0) {
+        ctx.drawImage(skybox, (offset.x + 1) - sky_width, offset.y)
+    } else {
+        ctx.drawImage(skybox, offset.x + sky_width, offset.y)
+    }
+}
 const drawFloor = () => {
     const start_y = (canvas.height / 2) + camera.rotation.y
     const floor_gradient = ctx.createLinearGradient(0, start_y, 0, start_y + 255)
     floor_gradient.addColorStop(0, "black")
-    floor_gradient.addColorStop(1, sparkling.is_active ? "#4c3321" :"#1f140c")
+    const close_floor_color = `
+        rgb(
+            ${60 + parseInt(lighter.flickering.value * 100)},
+            ${40 + parseInt(lighter.flickering.value * 100)},
+            ${20 + parseInt(lighter.flickering.value * 100)}
+        )
+    `
+    floor_gradient.addColorStop(1, sparkling.is_active ? "#4c3321" : close_floor_color)
     ctx.fillStyle = floor_gradient
     ctx.fillRect(
         0,
@@ -148,7 +174,6 @@ const drawCamera = () => {
             let fog = (corrected_distance / camera.fog_factor)
             if (fog < 0) fog = 0
             if (fog > 1) fog = 1
-    
             ctx.fillStyle = `rgba(0, 0, 0, ${fog})`
             ctx.fillRect(
                 x_wall, top_wall - 1,
@@ -156,13 +181,27 @@ const drawCamera = () => {
             )
         }
 
-        if (side === 0){
-            ctx.fillStyle = 'rgba(0, 0, 0, .5)'
-            ctx.fillRect(
-                x_wall, top_wall,
-                1, bottom_wall - top_wall
-            )
-        }
+        lighter.intensity = Math.min(1 / (perp_wall_dist), .7)
+        lighter.intensity = Math.exp(-perp_wall_dist * 0.3)
+        const light_alpha = Math.min(lighter.intensity + lighter.flickering.value, .8)
+        ctx.fillStyle = `rgba(
+            255,
+            ${150 - (lighter.intensity)},
+            5,
+            ${light_alpha}
+        )`
+        ctx.fillRect(
+            x_wall, top_wall,
+            1, bottom_wall - top_wall
+        )
+
+        // if (side === 0){
+        //     ctx.fillStyle = 'rgba(0, 0, 0, .5)'
+        //     ctx.fillRect(
+        //         x_wall, top_wall,
+        //         1, bottom_wall - top_wall
+        //     )
+        // }
 
         if (w === canvas.width / 2){
             camera.center_dist_ray.x = camera.position.x + corrected_distance * ray_dir_x * map.grid_offset
@@ -186,10 +225,18 @@ const updateSparkling = () => {
         sparkling.times = 0
     }
 }
+const updateLight = () => {
+    lighter.flickering.value += lighter.flickering.speed * clock.delta_time
+    if (Math.abs(lighter.flickering.value) >= Math.abs(lighter.flickering.max)){
+        lighter.flickering.speed = -lighter.flickering.speed
+    }
+}
 const drawScene = () => {
+    drawSky()
     drawFloor()
     drawCamera()
     updateSparkling()
+    updateLight()
     draw2dMap()
     drawHud(ctx, current_item, images.hud_sprites)
 }
@@ -203,7 +250,9 @@ const draw = (timeStamp) => {
     const fps = Math.round(1 / ((timeStamp - clock.last_update) / 1000))
     updateClock(timeStamp)
     inputListener()
-    drawScene()
+    if (clock.delta_time){
+        drawScene()
+    }
     // FPS //
     ctx.fillStyle = 'white'
     ctx.font = '30px bold'
@@ -213,7 +262,7 @@ const initAndRun = async () => {
     try {
         canvas.addEventListener('click', () => {
             // canvas.requestFullscreen().then(()=>{
-            // canvas.requestPointerLock()
+            //     canvas.requestPointerLock()
             // })
             canvas.requestPointerLock()
         })

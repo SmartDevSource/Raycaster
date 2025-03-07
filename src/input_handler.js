@@ -29,21 +29,25 @@ const mouseHandler = e => {
 
 export const inputListener = () => {
     let next_velocity = {x: 0, y: 0}
+    const speed_move = (keys.z && keys.q) || (keys.z && keys.d) || 
+                       (keys.s && keys.q) || (keys.s && keys.d) ?
+                       camera.speed_move * Math.SQRT1_2 : camera.speed_move
+
     if (keys.z){
-        next_velocity.x = (camera.speed_move * Math.cos(camera.rotation.x)) * clock.delta_time
-        next_velocity.y = (camera.speed_move * Math.sin(camera.rotation.x)) * clock.delta_time
+        next_velocity.x = (speed_move * Math.cos(camera.rotation.x)) * clock.delta_time
+        next_velocity.y = (speed_move * Math.sin(camera.rotation.x)) * clock.delta_time
     }
     if (keys.s){
-        next_velocity.x = -(camera.speed_move * Math.cos(camera.rotation.x)) * clock.delta_time
-        next_velocity.y = -(camera.speed_move * Math.sin(camera.rotation.x)) * clock.delta_time
+        next_velocity.x = -(speed_move * Math.cos(camera.rotation.x)) * clock.delta_time
+        next_velocity.y = -(speed_move * Math.sin(camera.rotation.x)) * clock.delta_time
     }
     if (keys.q){
-        next_velocity.x -= (camera.speed_move * Math.cos(camera.rotation.x + (Math.PI / 2))) * clock.delta_time
-        next_velocity.y -= (camera.speed_move * Math.sin(camera.rotation.x + (Math.PI / 2))) * clock.delta_time
+        next_velocity.x -= (speed_move * Math.cos(camera.rotation.x + (Math.PI / 2))) * clock.delta_time
+        next_velocity.y -= (speed_move * Math.sin(camera.rotation.x + (Math.PI / 2))) * clock.delta_time
     }
     if (keys.d){
-        next_velocity.x -= -(camera.speed_move * Math.cos(camera.rotation.x + (Math.PI / 2))) * clock.delta_time
-        next_velocity.y -= -(camera.speed_move * Math.sin(camera.rotation.x + (Math.PI / 2))) * clock.delta_time
+        next_velocity.x -= -(speed_move * Math.cos(camera.rotation.x + (Math.PI / 2))) * clock.delta_time
+        next_velocity.y -= -(speed_move * Math.sin(camera.rotation.x + (Math.PI / 2))) * clock.delta_time
     }
     if (keys['+']){
         camera.fog_factor += .1
@@ -51,6 +55,8 @@ export const inputListener = () => {
     if (keys['-']){
         camera.fog_factor -= .1
     }
+
+    camera.is_moving = (keys.q || keys.z || keys.d || keys.s)
 
     const new_x = camera.position.x + next_velocity.x
     const new_y = camera.position.y + next_velocity.y    

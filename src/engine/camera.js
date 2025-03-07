@@ -6,5 +6,7 @@ export const camera = {
     speed_move: 100,
     center_dist_ray: {x: 0, y: 0},
     fog_factor: 10,
-    radius: 10
+    radius: 10,
+    is_moving: false,
+    lighter_radius: 10
 }

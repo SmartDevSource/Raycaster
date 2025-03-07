@@ -17,5 +17,12 @@ export const images = {
             img: new Image(),
             pixels_data: null
         }
+    },
+    skyboxes: {
+        sky: {
+            path: `../../assets/gfx/skyboxes/sky.png`,
+            img: new Image(),
+            pixels_data: null
+        }  
     }
 }
