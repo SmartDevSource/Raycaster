@@ -1,13 +1,18 @@
 import { map } from '../map.js'
 import { draw2dLine, drawCircle, drawHud } from './draw.js'
 import { images } from '../resources/images.js'
-import { screen_resolution, clock, radians_fov, width_fov, sparkling, lighter } from '../vars.js'
+import { clock, sparkling, lighter } from '../structs.js'
 import { camera } from './camera.js'
 import { inputListener } from '../input_handler.js'
 import { loadResources } from '../resources/resources_handler.js'
 
 const canvas = document.getElementById('canvas')
 const ctx = canvas.getContext('2d')
+
+const degrees_fov = 60
+const radians_fov = degrees_fov * (Math.PI / 180)
+const screen_resolution = {w: 640, h: 480}
+const width_fov = radians_fov / screen_resolution.w
 canvas.width = screen_resolution.w
 canvas.height = screen_resolution.h
 const half_screen = {x: canvas.width / 2, y: canvas.height / 2}
@@ -77,12 +82,20 @@ const drawSky = () => {
 const drawFloor = () => {
     const start_y = (canvas.height / 2) + camera.rotation.y
     const floor_gradient = ctx.createLinearGradient(0, start_y, 0, start_y + 255)
-    floor_gradient.addColorStop(0, "black")
-    const close_floor_color = `
+    floor_gradient.addColorStop(0, map.floor_gradient.far_dark)
+    const light_factor = parseInt(lighter.flickering.value * 100)
+    const close_floor_color = current_item === 'lighter' ? `
         rgb(
-            ${60 + parseInt(lighter.flickering.value * 100)},
-            ${40 + parseInt(lighter.flickering.value * 100)},
-            ${20 + parseInt(lighter.flickering.value * 100)}
+            ${map.floor_gradient.close_light.r + light_factor},
+            ${map.floor_gradient.close_light.g + light_factor},
+            ${map.floor_gradient.close_light.b + light_factor}
+        )
+    ` :
+    `
+        rgb(
+            ${map.floor_gradient.close_dark.r},
+            ${map.floor_gradient.close_dark.g},
+            ${map.floor_gradient.close_dark.b}
         )
     `
     floor_gradient.addColorStop(1, sparkling.is_active ? "#4c3321" : close_floor_color)
@@ -171,9 +184,7 @@ const drawCamera = () => {
         )
 
         if (!sparkling.is_active){
-            let fog = (corrected_distance / camera.fog_factor)
-            if (fog < 0) fog = 0
-            if (fog > 1) fog = 1
+            const fog = getFog(corrected_distance)
             ctx.fillStyle = `rgba(0, 0, 0, ${fog})`
             ctx.fillRect(
                 x_wall, top_wall - 1,
@@ -181,22 +192,25 @@ const drawCamera = () => {
             )
         }
 
-        lighter.intensity = Math.min(1 / (perp_wall_dist), .7)
-        lighter.intensity = Math.exp(-perp_wall_dist * 0.3)
-        const light_alpha = Math.min(lighter.intensity + lighter.flickering.value, .8)
-        ctx.fillStyle = `rgba(
-            255,
-            ${150 - (lighter.intensity)},
-            5,
-            ${light_alpha}
-        )`
-        ctx.fillRect(
-            x_wall, top_wall,
-            1, bottom_wall - top_wall
-        )
+        if (current_item === 'lighter'){
+            lighter.intensity = Math.min(1 / (perp_wall_dist), 1)
+            lighter.intensity = Math.exp(-perp_wall_dist * 0.3)
+            const light_alpha = Math.min(lighter.intensity, .6) + lighter.flickering.value
+            ctx.fillStyle = `rgba(
+                255,
+                ${150 - (lighter.intensity)},
+                5,
+                ${light_alpha}
+            )`
+            ctx.fillRect(
+                x_wall, top_wall,
+                1, bottom_wall - top_wall
+            )
+    
+        }
 
         // if (side === 0){
-        //     ctx.fillStyle = 'rgba(0, 0, 0, .5)'
+        //     ctx.fillStyle = 'rgba(0, 0, 0, .2)'
         //     ctx.fillRect(
         //         x_wall, top_wall,
         //         1, bottom_wall - top_wall
@@ -212,6 +226,17 @@ const drawCamera = () => {
     }
     // console.log("zbuffer :", zbuffer)
 }
+const getFog = (corrected_distance) => {
+    const current_fog = current_item === 'lighter' ? lighter.fog_factor : (lighter.fog_factor / 3)
+    let fog = (corrected_distance / current_fog)
+    if (current_item !== 'lighter'){
+        if (fog < 0.8) fog = 0.8
+    } else {
+        if (fog < 0) fog = 0
+    }
+    if (fog > 1) fog = 1
+    return fog
+}
 const updateSparkling = () => {
     if (!sparkling.next){
         sparkling.next = Math.floor(Math.random() * (10 - 3) + 3) * 1000
@@ -225,7 +250,7 @@ const updateSparkling = () => {
         sparkling.times = 0
     }
 }
-const updateLight = () => {
+const updateLightFlickering = () => {
     lighter.flickering.value += lighter.flickering.speed * clock.delta_time
     if (Math.abs(lighter.flickering.value) >= Math.abs(lighter.flickering.max)){
         lighter.flickering.speed = -lighter.flickering.speed
@@ -236,7 +261,7 @@ const drawScene = () => {
     drawFloor()
     drawCamera()
     updateSparkling()
-    updateLight()
+    updateLightFlickering()
     draw2dMap()
     drawHud(ctx, current_item, images.hud_sprites)
 }
@@ -250,7 +275,7 @@ const draw = (timeStamp) => {
     const fps = Math.round(1 / ((timeStamp - clock.last_update) / 1000))
     updateClock(timeStamp)
     inputListener()
-    if (clock.delta_time){
+    if (!isNaN(clock.delta_time)){
         drawScene()
     }
     // FPS //

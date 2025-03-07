@@ -5,8 +5,9 @@ export const camera = {
     max_y_angle: 450,
     speed_move: 100,
     center_dist_ray: {x: 0, y: 0},
-    fog_factor: 10,
     radius: 10,
     is_moving: false,
+    run_factor: 1.5,
+    is_running: false,
     lighter_radius: 10
 }

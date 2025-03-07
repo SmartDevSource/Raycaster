@@ -33,5 +33,10 @@ export const map = {
         ['w01', 'w01', 'w01', 'w01', 'w01', 'w01', 'w01', 'w01', 'w01', 'w01', 'w01', 'w01', 'w01', 'w01', 'w01'],
     ],
     grid_offset: 32,
-    skybox: 'sky'
+    skybox: 'sky',
+    floor_gradient: {
+        close_dark: {r: 25, g: 18, b: 10},
+        close_light: {r: 60, g: 40, b: 20},
+        far_dark: 'black'
+    }
 }

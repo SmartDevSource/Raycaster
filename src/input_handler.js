@@ -1,4 +1,4 @@
-import { keys, mouse, clock } from './vars.js'
+import { keys, mouse, clock } from './structs.js'
 import { camera } from './engine/camera.js'
 import { map } from './map.js'
 
@@ -29,10 +29,15 @@ const mouseHandler = e => {
 
 export const inputListener = () => {
     let next_velocity = {x: 0, y: 0}
-    const speed_move = (keys.z && keys.q) || (keys.z && keys.d) || 
+    let speed_move = (keys.z && keys.q) || (keys.z && keys.d) || 
                        (keys.s && keys.q) || (keys.s && keys.d) ?
                        camera.speed_move * Math.SQRT1_2 : camera.speed_move
-
+    if (keys.shift){
+        speed_move *= camera.run_factor
+        camera.is_running = true
+    } else {
+        camera.is_running = false
+    }
     if (keys.z){
         next_velocity.x = (speed_move * Math.cos(camera.rotation.x)) * clock.delta_time
         next_velocity.y = (speed_move * Math.sin(camera.rotation.x)) * clock.delta_time

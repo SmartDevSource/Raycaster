@@ -1,4 +1,4 @@
-import { clock } from "../vars.js"
+import { clock } from "../structs.js"
 import { camera } from "./camera.js"
 import { hud_items } from "../resources/hud_items.js"
 
@@ -52,20 +52,22 @@ export const draw2dLine = (ctx, start, end, line_width, color) => {
 }
 
 export const drawHud = (ctx, current_item_name, hud_sprites) => {
-    if (current_item.name !== current_item_name){
-        switch_state.switched = false,
-        switch_state.angle = -1,
-
-        current_item.image = hud_sprites[current_item_name].img
-        current_item.data = hud_items[current_item_name]
-        current_item.frame_width = (current_item.image.width / current_item.data.frame_count)
-
-        current_item.name = current_item_name
-    }
-    if (!switch_state.switched && current_item.image){
-        switchItemAnimation(ctx)
-    } else {
-        drawWeapon(ctx)
+    if (current_item_name){
+        if (current_item.name !== current_item_name){
+            switch_state.switched = false,
+            switch_state.angle = -1,
+    
+            current_item.image = hud_sprites[current_item_name].img
+            current_item.data = hud_items[current_item_name]
+            current_item.frame_width = (current_item.image.width / current_item.data.frame_count)
+    
+            current_item.name = current_item_name
+        }
+        if (!switch_state.switched && current_item.image){
+            switchItemAnimation(ctx)
+        } else {
+            drawWeapon(ctx)
+        }
     }
 }
 
@@ -112,7 +114,8 @@ const drawWeapon = ctx => {
     }
 
     if (camera.is_moving){
-        weapon_bobbing.angle += weapon_bobbing.speed * clock.delta_time
+        const current_cam_speed = camera.is_running ? weapon_bobbing.speed * camera.run_factor : weapon_bobbing.speed
+        weapon_bobbing.angle += current_cam_speed * clock.delta_time
         if (weapon_bobbing.angle > Math.PI || weapon_bobbing.angle < 0){
             weapon_bobbing.speed = -weapon_bobbing.speed
         }
