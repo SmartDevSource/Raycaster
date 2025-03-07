@@ -16,7 +16,7 @@ export const loadResources = async (ctx, images) => {
         })
     }
 
-    const imagePromises = Object.values(images).map(loadImage)
+    const imagePromises = Object.values({...images.textures, ...images.hud_sprites}).map(loadImage)
 
     return Promise.all([...imagePromises])
     .then(() => {

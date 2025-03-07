@@ -46,10 +46,10 @@ export const inputListener = () => {
         next_velocity.y -= -(camera.speed_move * Math.sin(camera.rotation.x + (Math.PI / 2))) * clock.delta_time
     }
     if (keys['+']){
-        camera.fog += 1
+        camera.fog_factor += .1
     }
     if (keys['-']){
-        camera.fog -= 1
+        camera.fog_factor -= .1
     }
 
     const new_x = camera.position.x + next_velocity.x

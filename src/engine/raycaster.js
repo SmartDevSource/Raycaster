@@ -1,7 +1,7 @@
 import { map } from '../map.js'
-import { draw2dLine, drawCircle } from '../utils/draw.js'
+import { draw2dLine, drawCircle, drawHud } from '../utils/draw.js'
 import { images } from '../resources/images.js'
-import { screen_resolution, clock, radians_fov, width_fov } from '../vars.js'
+import { screen_resolution, clock, radians_fov, width_fov, sparkling } from '../vars.js'
 import { camera } from './camera.js'
 import { inputListener } from '../input_handler.js'
 import { loadResources } from '../resources/resources_handler.js'
@@ -10,7 +10,12 @@ const canvas = document.getElementById('canvas')
 const ctx = canvas.getContext('2d')
 canvas.width = screen_resolution.w
 canvas.height = screen_resolution.h
+const half_screen = {x: canvas.width / 2, y: canvas.height / 2}
+
 const floor_height = 750
+const z_buffer = new Array(canvas.width)
+
+const current_item = 'lighter'
 
 const get2dPlaneColor = tile_type => {
     switch(true){
@@ -54,7 +59,7 @@ const drawFloor = () => {
     const start_y = (canvas.height / 2) + camera.rotation.y
     const floor_gradient = ctx.createLinearGradient(0, start_y, 0, start_y + 255)
     floor_gradient.addColorStop(0, "black")
-    floor_gradient.addColorStop(1, "#1f140c")
+    floor_gradient.addColorStop(1, sparkling.is_active ? "#4c3321" :"#1f140c")
     ctx.fillStyle = floor_gradient
     ctx.fillRect(
         0,
@@ -64,11 +69,6 @@ const drawFloor = () => {
     )
 }
 const drawCamera = () => {
-    const half_screen = {
-        x: canvas.width / 2,
-        y: canvas.height / 2
-    }
-
     for (let w = 0; w <= canvas.width; w++) {
         const ray_angle = camera.rotation.x + radians_fov / 2 - w * width_fov
         const ray_dir_x = Math.cos(ray_angle)
@@ -133,7 +133,7 @@ const drawCamera = () => {
             (camera.position.y / map.grid_offset + perp_wall_dist * ray_dir_y) % 1 :
             (camera.position.x / map.grid_offset + perp_wall_dist * ray_dir_x) % 1
 
-        const current_texture = images[tile_content.slice(1)]
+        const current_texture = images.textures[tile_content.slice(1)]
         texture_offset = Math.floor(texture_offset * current_texture.img.width)
 
         ctx.drawImage(
@@ -144,12 +144,17 @@ const drawCamera = () => {
             1, bottom_wall - top_wall
         )
 
-        const fog = corrected_distance / camera.fog
-        ctx.fillStyle = `rgba(0, 0, 0, ${fog})`
-        ctx.fillRect(
-            x_wall, top_wall - 1,
-            1, bottom_wall - top_wall + 2
-        )
+        if (!sparkling.is_active){
+            let fog = (corrected_distance / camera.fog_factor)
+            if (fog < 0) fog = 0
+            if (fog > 1) fog = 1
+    
+            ctx.fillStyle = `rgba(0, 0, 0, ${fog})`
+            ctx.fillRect(
+                x_wall, top_wall - 1,
+                1, bottom_wall - top_wall + 2
+            )
+        }
 
         if (side === 0){
             ctx.fillStyle = 'rgba(0, 0, 0, .5)'
@@ -163,19 +168,40 @@ const drawCamera = () => {
             camera.center_dist_ray.x = camera.position.x + corrected_distance * ray_dir_x * map.grid_offset
             camera.center_dist_ray.y = camera.position.y + corrected_distance * ray_dir_y * map.grid_offset
         }
+
+        z_buffer[w] = perp_wall_dist
+    }
+    // console.log("zbuffer :", zbuffer)
+}
+const updateSparkling = () => {
+    if (!sparkling.next){
+        sparkling.next = Math.floor(Math.random() * (10 - 3) + 3) * 1000
+        setTimeout(() => {
+            sparkling.is_active = true
+            setTimeout(()=> {
+                sparkling.is_active = false
+                sparkling.next = null
+            }, 100)
+        }, sparkling.next)
+        sparkling.times = 0
     }
 }
 const drawScene = () => {
     drawFloor()
     drawCamera()
+    updateSparkling()
     draw2dMap()
+    drawHud(ctx, current_item, images.hud_sprites)
+}
+const updateClock = timeStamp => {
+    clock.delta_time = Math.min((timeStamp - clock.last_update) / 1000, 0.016)
+    clock.last_update = timeStamp
 }
 const draw = (timeStamp) => {
     requestAnimationFrame(draw)
     ctx.clearRect(0, 0, canvas.width, canvas.height)
-    clock.delta_time = Math.min((timeStamp - clock.last_update) / 1000, 0.016)
     const fps = Math.round(1 / ((timeStamp - clock.last_update) / 1000))
-    clock.last_update = timeStamp
+    updateClock(timeStamp)
     inputListener()
     drawScene()
     // FPS //

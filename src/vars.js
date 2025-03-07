@@ -20,3 +20,9 @@ export const clock = {
     delta_time: 0,
     last_update: 0
 }
+
+export const sparkling = {
+    is_active: false,
+    next: null,
+    times: 0
+}
