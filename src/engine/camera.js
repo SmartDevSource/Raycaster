@@ -1,6 +1,6 @@
 export const camera = {
     angle: -1.6,
-    position: {x: 64, y: 192},
+    position: {x: 128, y: 512},
     rotation: {x: -1.6, y: 0},
     max_y_angle: 450,
     speed_move: 100,
