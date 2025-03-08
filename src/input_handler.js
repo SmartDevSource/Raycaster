@@ -18,7 +18,7 @@ const mouseHandler = e => {
         camera.rotation.x += e.movementX * mouse_x_factor * mouse.sensitivity
         camera.rotation.y -= e.movementY * mouse.sensitivity
 
-        camera.rotation.x = (camera.rotation.x + Math.PI * 2) % (Math.PI * 2)
+        camera.rotation.x = ((camera.rotation.x + Math.PI) % (2 * Math.PI)) - Math.PI;
         if (camera.rotation.y < -camera.max_y_angle){
             camera.rotation.y = -camera.max_y_angle
         } else if (camera.rotation.y > camera.max_y_angle){

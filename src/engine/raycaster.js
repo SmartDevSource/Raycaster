@@ -1,4 +1,5 @@
-import { map } from '../map.js'
+import { map, getMapSprites } from '../map.js'
+import { sprites_data } from '../resources/sprites_data.js'
 import { draw2dLine, drawCircle, drawHud } from './draw.js'
 import { images } from '../resources/images.js'
 import { clock, sparkling, lighter } from '../structs.js'
@@ -21,6 +22,11 @@ const floor_height = 750
 const z_buffer = new Array(canvas.width)
 
 const current_item = 'lighter'
+
+const map_sprites = getMapSprites()
+console.log("map_sprites", map_sprites)
+
+let test_output = ''
 
 const get2dPlaneColor = tile_type => {
     switch(true){
@@ -107,12 +113,12 @@ const drawFloor = () => {
         floor_height
     )
 }
-const drawCamera = () => {
+const projectCamera = () => {
     for (let w = 0; w <= canvas.width; w++) {
         const ray_angle = camera.rotation.x + radians_fov / 2 - w * width_fov
         const ray_dir_x = Math.cos(ray_angle)
         const ray_dir_y = Math.sin(ray_angle)
-        
+
         let map_x = Math.floor(camera.position.x / map.grid_offset)
         let map_y = Math.floor(camera.position.y / map.grid_offset)
 
@@ -172,7 +178,7 @@ const drawCamera = () => {
             (camera.position.y / map.grid_offset + perp_wall_dist * ray_dir_y) % 1 :
             (camera.position.x / map.grid_offset + perp_wall_dist * ray_dir_x) % 1
 
-        const current_texture = images.textures[tile_content.slice(1)]
+        const current_texture = images.textures[tile_content]
         texture_offset = Math.floor(texture_offset * current_texture.img.width)
 
         ctx.drawImage(
@@ -226,6 +232,51 @@ const drawCamera = () => {
     }
     // console.log("zbuffer :", zbuffer)
 }
+const projectSprites = () => {
+    map_sprites.map(map_sprite => {
+        const dx = map_sprite.position.x - camera.position.x
+        const dy = map_sprite.position.y - camera.position.y
+        map_sprite.distance = dx * dx + dy * dy
+    })
+    map_sprites.sort((a, b) => b.distance - a.distance)
+
+    for (let sprite of map_sprites){
+        let dx = sprite.position.x - camera.position.x
+        let dy = sprite.position.y - camera.position.y
+
+        let sprite_angle = Math.atan2(dy, dx) - camera.rotation.x
+        sprite_angle = sprite_angle * (180 / Math.PI)
+
+        if (sprite_angle < -180) sprite_angle += 360
+        if (sprite_angle > 180) sprite_angle -= 360
+
+        if (Math.abs(sprite_angle) > degrees_fov) continue
+
+        const screen_x = (sprite_angle / (degrees_fov / 2)) * (canvas.width / 2) + (canvas.width / 2)
+        const sprite_distance = Math.sqrt(dx * dx + dy * dy)
+        const sprite_size = 10000 / sprite_distance
+
+
+        const current_sprite = images.map_sprites[sprite.name].img
+        const sprite_data = sprites_data[sprite.name]
+
+        const height_offset = sprite_data.height * (sprite_size / 100)
+        test_output = height_offset
+
+
+        ctx.drawImage(
+            current_sprite,
+            0,
+            0,
+            current_sprite.width,
+            current_sprite.height,
+            screen_x - sprite_size / 2,
+            (half_screen.y - sprite_size / 2) + camera.rotation.y + height_offset,
+            sprite_size,
+            sprite_size
+        )
+    }
+}
 const getFog = (corrected_distance) => {
     const current_fog = current_item === 'lighter' ? lighter.fog_factor : (lighter.fog_factor / 3)
     let fog = (corrected_distance / current_fog)
@@ -259,7 +310,8 @@ const updateLightFlickering = () => {
 const drawScene = () => {
     drawSky()
     drawFloor()
-    drawCamera()
+    projectCamera()
+    projectSprites()
     updateSparkling()
     updateLightFlickering()
     draw2dMap()
@@ -282,6 +334,8 @@ const draw = (timeStamp) => {
     ctx.fillStyle = 'white'
     ctx.font = '30px bold'
     ctx.fillText(`FPS : ${fps}`, 500, 50)
+    // TEST OUTPUT //
+    ctx.fillText(test_output, 110, 50)
 }
 const initAndRun = async () => {
     try {
