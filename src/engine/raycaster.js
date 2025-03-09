@@ -21,7 +21,7 @@ const half_screen = {x: canvas.width / 2, y: canvas.height / 2}
 const floor_height = 750
 const z_buffer = new Array(canvas.width)
 
-const current_item = 'lighter'
+const current_item = ''
 
 const map_tiles = getMapTiles()
 console.log(map_tiles)
@@ -239,46 +239,66 @@ const projectCamera = () => {
     }
 }
 const projectSprites = () => {
-    map_sprites.map(map_sprite => {
-        const dx = map_sprite.position.x - camera.position.x
-        const dy = map_sprite.position.y - camera.position.y
-        map_sprite.distance = dx * dx + dy * dy
+    map_sprites.map(sprite => {
+        const dx = sprite.position.x - camera.position.x
+        const dy = sprite.position.y - camera.position.y
+        sprite.distance = Math.abs(dx * Math.cos(camera.rotation.x) + dy * Math.sin(camera.rotation.x))
+        sprite.dx = dx
+        sprite.dy = dy
+        sprite.angle = Math.atan2(dy, dx) - camera.rotation.x
     })
     map_sprites.sort((a, b) => b.distance - a.distance)
 
     for (let sprite of map_sprites){
-        let dx = sprite.position.x - camera.position.x
-        let dy = sprite.position.y - camera.position.y
+        if (sprite.angle < -Math.PI) sprite.angle += 2 * Math.PI
+        if (sprite.angle > Math.PI) sprite.angle -= 2 * Math.PI
 
-        let sprite_angle = Math.atan2(dy, dx) - camera.rotation.x
+        if (Math.abs(sprite.angle) > radians_fov) continue
 
-        if (sprite_angle < -Math.PI) sprite_angle += 2 * Math.PI
-        if (sprite_angle > Math.PI) sprite_angle -= 2 * Math.PI
-
-        if (Math.abs(sprite_angle) > radians_fov) continue
-
-        const screen_x = (sprite_angle / (radians_fov / 2)) * (half_screen.x) + (half_screen.x)
-        const sprite_distance = (Math.abs(dx * Math.cos(camera.rotation.x) + dy * Math.sin(camera.rotation.x)))
-        const sprite_size = 10_000 / sprite_distance
+        const screen_x = (sprite.angle / (radians_fov / 2)) * (half_screen.x) + (half_screen.x)
+        const sprite_size = 10_000 / sprite.distance
 
         const current_sprite = images.map_sprites[sprite.name].img
+        const current_sprite_mask = images.map_sprites[`${sprite.name}_mask`].img
         const sprite_data = sprites_data[sprite.name]
 
         const height_offset = sprite_data.height * (sprite_size / 100)
+        let alpha;
+
+        if (current_item === 'lighter'){
+            alpha = Math.max(0, sprite.distance / 350) + lighter.flickering.value
+        } else {
+            alpha = sparkling.is_active ? 0 : Math.max(.7, sprite.distance / 100)
+        }
         
         for (let i = 0 ; i < current_sprite.width ; i++){
             const slice_width = sprite_size / current_sprite.width
             const screen_slice_x = Math.floor(screen_x - (sprite_size / 2) + (i * slice_width))
-            if (screen_slice_x < 0 || screen_slice_x > canvas.width) continue
-            if (z_buffer[screen_slice_x] < sprite_distance) continue
 
+            if (screen_slice_x < 0 || screen_slice_x > canvas.width) continue
+            if (z_buffer[screen_slice_x] < sprite.distance) continue
+
+            const top_y = (half_screen.y - sprite_size / 2) + camera.rotation.y - height_offset
+            const scale_x = Math.ceil(sprite_size / current_sprite.width)
+            
             ctx.drawImage(
                 current_sprite,
                 i * 1, 0,
                 1, current_sprite.height,
-                screen_slice_x, (half_screen.y - sprite_size / 2) + camera.rotation.y - height_offset,
-                Math.ceil(sprite_size / current_sprite.width), sprite_size
+                screen_slice_x, top_y,
+                scale_x, sprite_size
             )
+
+            ctx.globalAlpha = alpha
+            ctx.drawImage(
+                current_sprite_mask,
+                i * 1, 0,
+                1, current_sprite_mask.height,
+                screen_slice_x, top_y,
+                scale_x, sprite_size
+            )
+            ctx.globalAlpha = 1
+
         }
     }
 }
@@ -346,10 +366,10 @@ const draw = (timeStamp) => {
 const initAndRun = async () => {
     try {
         canvas.addEventListener('click', () => {
-            // canvas.requestFullscreen().then(()=>{
-            //     canvas.requestPointerLock()
-            // })
-            canvas.requestPointerLock()
+            canvas.requestFullscreen().then(()=>{
+                canvas.requestPointerLock()
+            })
+            // canvas.requestPointerLock()
         })
         await loadResources(ctx, images)
         draw()

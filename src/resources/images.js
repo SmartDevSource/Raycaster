@@ -23,7 +23,12 @@ export const images = {
             path: `../../assets/gfx/sprites/map/barrel.png`,
             img: new Image(),
             pixels_data: null
-        }
+        },
+        s01_mask: {
+            path: `../../assets/gfx/sprites/map/barrel_mask.png`,
+            img: new Image(),
+            pixels_data: null
+        },
     },
     skyboxes: {
         sky: {
