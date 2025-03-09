@@ -212,7 +212,6 @@ const projectCamera = () => {
                 x_wall, top_wall,
                 1, bottom_wall - top_wall
             )
-    
         }
 
         // if (side === 0){
@@ -223,14 +222,22 @@ const projectCamera = () => {
         //     )
         // }
 
-        if (w === canvas.width / 2){
+        if (w === half_screen.x){
             camera.center_dist_ray.x = camera.position.x + corrected_distance * ray_dir_x * map.grid_offset
             camera.center_dist_ray.y = camera.position.y + corrected_distance * ray_dir_y * map.grid_offset
         }
 
-        z_buffer[w] = perp_wall_dist
+        const dx = (camera.position.x + corrected_distance * ray_dir_x * map.grid_offset) - camera.position.x
+        const dy = (camera.position.y + corrected_distance * ray_dir_y * map.grid_offset) - camera.position.y
+
+        const euclidean_distance = Math.sqrt(
+            dx ** 2 +
+            dy ** 2
+        )
+
+        z_buffer[x_wall] = euclidean_distance
+        // z_buffer[w] = perp_wall_dist
     }
-    // console.log("zbuffer :", zbuffer)
 }
 const projectSprites = () => {
     map_sprites.map(map_sprite => {
@@ -245,15 +252,14 @@ const projectSprites = () => {
         let dy = sprite.position.y - camera.position.y
 
         let sprite_angle = Math.atan2(dy, dx) - camera.rotation.x
-        sprite_angle = sprite_angle * (180 / Math.PI)
 
-        if (sprite_angle < -180) sprite_angle += 360
-        if (sprite_angle > 180) sprite_angle -= 360
+        if (sprite_angle < -Math.PI) sprite_angle += 2 * Math.PI
+        if (sprite_angle > Math.PI) sprite_angle -= 2 * Math.PI
 
-        if (Math.abs(sprite_angle) > degrees_fov) continue
+        if (Math.abs(sprite_angle) > radians_fov) continue
 
-        const screen_x = (sprite_angle / (degrees_fov / 2)) * (canvas.width / 2) + (canvas.width / 2)
-        const sprite_distance = Math.abs(dx * Math.cos(camera.rotation.x) + dy * Math.sin(camera.rotation.x))
+        const screen_x = (sprite_angle / (radians_fov / 2)) * (half_screen.x) + (half_screen.x)
+        const sprite_distance =  (Math.abs(dx * Math.cos(camera.rotation.x) + dy * Math.sin(camera.rotation.x)))
         const sprite_size = 10_000 / sprite_distance
 
         const current_sprite = images.map_sprites[sprite.name].img
@@ -261,16 +267,27 @@ const projectSprites = () => {
 
         const height_offset = sprite_data.height * (sprite_size / 100)
 
+        test_output = ''
+        
         for (let i = 0 ; i < current_sprite.width ; i++){
-            const screen_slice_x = screen_x - sprite_size / 2 + (i * (sprite_size / current_sprite.width))
+            const screen_slice_x = parseInt(screen_x - sprite_size / 2 + (i * (sprite_size / current_sprite.width)))
             if (screen_slice_x < 0 || screen_slice_x > canvas.width) continue
             if (z_buffer[screen_slice_x] < sprite_distance) continue
+
             ctx.drawImage(
                 current_sprite,
                 i * 1, 0,
                 1, current_sprite.height,
                 screen_slice_x, (half_screen.y - sprite_size / 2) + camera.rotation.y - height_offset,
                 sprite_size / current_sprite.width, sprite_size
+            )
+            ctx.fillStyle = 'red'
+            ctx.fillRect(
+                screen_slice_x,
+                (half_screen.y - sprite_size / 2) + camera.rotation.y - height_offset,
+                sprite_size / current_sprite.width,
+                sprite_size
+
             )
         }
     }
@@ -304,12 +321,13 @@ const updateLightFlickering = () => {
     if (Math.abs(lighter.flickering.value) >= Math.abs(lighter.flickering.max)){
         lighter.flickering.speed = -lighter.flickering.speed
     }
+    // console.log("lighter.flickering.value", lighter.flickering.value)
 }
 const drawScene = () => {
     drawSky()
     drawFloor()
     projectCamera()
-    // projectSprites()
+    projectSprites()
     updateSparkling()
     updateLightFlickering()
     draw2dMap()
@@ -333,7 +351,7 @@ const draw = (timeStamp) => {
     ctx.font = '30px bold'
     ctx.fillText(`FPS : ${fps}`, 500, 50)
     // TEST OUTPUT //
-    ctx.fillText(test_output, 110, 50)
+    ctx.fillText(test_output, 110, 80)
 }
 const initAndRun = async () => {
     try {

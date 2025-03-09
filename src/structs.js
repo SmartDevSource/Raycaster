@@ -14,7 +14,7 @@ export const mouse = {
 
 export const clock = {
     delta_time: 0,
-    last_update: 0
+    last_update: 1
 }
 
 export const sparkling = {
