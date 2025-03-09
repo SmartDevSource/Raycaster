@@ -47,11 +47,28 @@ export const getMapSprites = () => {
         for (let x = 0 ; x < map.tiles[y].length ; x++){
             const cell_content = map.tiles[y][x]
             if (cell_content.startsWith('s')){
-                const cell_x = x * map.grid_offset
-                const cell_y = y * map.grid_offset
+                const cell_x = (x * map.grid_offset) + map.grid_offset / 2
+                const cell_y = (y * map.grid_offset) + map.grid_offset / 2
                 sprites_map.push({name: cell_content, position: {x: cell_x, y: cell_y}, distance: 0})
             }
         }
     }
     return sprites_map
+}
+
+export const getMapTiles = () => {
+    const map_tiles = Array.from({length: map.tiles.length}, () =>
+        Array(map.tiles[0].length).fill('___')
+    )
+    for (let y = 0 ; y < map.tiles.length ; y++){
+        for (let x = 0 ; x < map.tiles[y].length ; x++){
+            const cell_content = map.tiles[y][x]
+            if (cell_content.startsWith('w')){
+                map_tiles[y][x] = cell_content
+            } else {
+                map_tiles[y][x] = '___'
+            }
+        }
+    }
+    return map_tiles
 }

@@ -1,4 +1,4 @@
-import { map, getMapSprites } from '../map.js'
+import { map, getMapSprites, getMapTiles } from '../map.js'
 import { sprites_data } from '../resources/sprites_data.js'
 import { draw2dLine, drawCircle, drawHud } from './draw.js'
 import { images } from '../resources/images.js'
@@ -22,6 +22,9 @@ const floor_height = 750
 const z_buffer = new Array(canvas.width)
 
 const current_item = 'lighter'
+
+const map_tiles = getMapTiles()
+console.log(map_tiles)
 
 const map_sprites = getMapSprites()
 console.log("map_sprites", map_sprites)
@@ -157,7 +160,7 @@ const projectCamera = () => {
                 map_y += step_y
                 side = 1
             }
-            if (map.tiles[map_y][map_x].startsWith('w')){
+            if (map_tiles[map_y][map_x] != '___'){
                 tile_content = map.tiles[map_y][map_x]
                 hit = true
             }
@@ -230,13 +233,9 @@ const projectCamera = () => {
         const dx = (camera.position.x + corrected_distance * ray_dir_x * map.grid_offset) - camera.position.x
         const dy = (camera.position.y + corrected_distance * ray_dir_y * map.grid_offset) - camera.position.y
 
-        const euclidean_distance = Math.sqrt(
-            dx ** 2 +
-            dy ** 2
-        )
+        const euclidean_distance = Math.sqrt(dx ** 2 + dy ** 2)
 
         z_buffer[x_wall] = euclidean_distance
-        // z_buffer[w] = perp_wall_dist
     }
 }
 const projectSprites = () => {
@@ -259,18 +258,17 @@ const projectSprites = () => {
         if (Math.abs(sprite_angle) > radians_fov) continue
 
         const screen_x = (sprite_angle / (radians_fov / 2)) * (half_screen.x) + (half_screen.x)
-        const sprite_distance =  (Math.abs(dx * Math.cos(camera.rotation.x) + dy * Math.sin(camera.rotation.x)))
+        const sprite_distance = (Math.abs(dx * Math.cos(camera.rotation.x) + dy * Math.sin(camera.rotation.x)))
         const sprite_size = 10_000 / sprite_distance
 
         const current_sprite = images.map_sprites[sprite.name].img
         const sprite_data = sprites_data[sprite.name]
 
         const height_offset = sprite_data.height * (sprite_size / 100)
-
-        test_output = ''
         
         for (let i = 0 ; i < current_sprite.width ; i++){
-            const screen_slice_x = parseInt(screen_x - sprite_size / 2 + (i * (sprite_size / current_sprite.width)))
+            const slice_width = sprite_size / current_sprite.width
+            const screen_slice_x = Math.floor(screen_x - (sprite_size / 2) + (i * slice_width))
             if (screen_slice_x < 0 || screen_slice_x > canvas.width) continue
             if (z_buffer[screen_slice_x] < sprite_distance) continue
 
@@ -279,15 +277,7 @@ const projectSprites = () => {
                 i * 1, 0,
                 1, current_sprite.height,
                 screen_slice_x, (half_screen.y - sprite_size / 2) + camera.rotation.y - height_offset,
-                sprite_size / current_sprite.width, sprite_size
-            )
-            ctx.fillStyle = 'red'
-            ctx.fillRect(
-                screen_slice_x,
-                (half_screen.y - sprite_size / 2) + camera.rotation.y - height_offset,
-                sprite_size / current_sprite.width,
-                sprite_size
-
+                Math.ceil(sprite_size / current_sprite.width), sprite_size
             )
         }
     }
