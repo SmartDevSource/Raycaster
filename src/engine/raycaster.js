@@ -8,6 +8,8 @@ import { inputListener } from '../input_handler.js'
 import { loadResources } from '../resources/resources_handler.js'
 import { ids_registry } from './id_registry.js'
 
+// const project_camera_worker = new Worker("/workers/project_camera.js")
+
 const canvas = document.getElementById('canvas')
 const ctx = canvas.getContext('2d')
 
@@ -18,6 +20,7 @@ const width_fov = radians_fov / screen_resolution.w
 canvas.width = screen_resolution.w
 canvas.height = screen_resolution.h
 const half_screen = {x: canvas.width / 2, y: canvas.height / 2}
+const multi_directional_frames = 24
 
 const floor_height = 750
 const z_buffer = new Array(canvas.width)
@@ -109,6 +112,18 @@ const drawFloor = () => {
     )
 }
 const projectCamera = () => {
+    // project_camera_worker.postMessage({
+    //     map,
+    //     z_buffer,
+    //     ids_registry,
+    //     camera_rotation: camera.rotation,
+    //     camera_position: camera.position,
+    //     canvas_width: canvas.width,
+    //     canvas_height: canvas.height,
+    //     width_fov,
+    //     radians_fov
+    // })
+
     for (let w = 0; w <= canvas.width; w++) {
         const ray_angle = camera.rotation.x + radians_fov / 2 - w * width_fov
         const ray_dir_x = Math.cos(ray_angle)
@@ -175,7 +190,6 @@ const projectCamera = () => {
             (camera.position.x / map.grid_offset + perp_wall_dist * ray_dir_x) % 1
 
         const current_texture = images.walls[tile_content]
-        console.log(current_texture.img.width)
         texture_offset = Math.floor(texture_offset * current_texture.img.width)
 
         ctx.drawImage(
@@ -196,8 +210,8 @@ const projectCamera = () => {
         }
 
         if (current_item === 'lighter'){
-            lighter.intensity = Math.min(1 / (perp_wall_dist), 1)
-            lighter.intensity = Math.exp(-perp_wall_dist * 0.3)
+            lighter.intensity = Math.min(1 / (corrected_distance), 1)
+            lighter.intensity = Math.exp(-corrected_distance * 0.3)
             const light_alpha = Math.min(lighter.intensity, .6) + lighter.flickering.value
             ctx.fillStyle = `rgba(
                 255,
@@ -236,10 +250,12 @@ const projectSprites = () => {
     map_sprites.map(sprite => {
         const dx = sprite.position.x - camera.position.x
         const dy = sprite.position.y - camera.position.y
+        const angle_diff = Math.atan2(dy, dx)
         sprite.distance = Math.abs(dx * Math.cos(camera.rotation.x) + dy * Math.sin(camera.rotation.x))
         sprite.dx = dx
         sprite.dy = dy
-        sprite.angle = Math.atan2(dy, dx) - camera.rotation.x
+        sprite.angle = angle_diff - camera.rotation.x
+        sprite.angle_diff = angle_diff
     })
     map_sprites.sort((a, b) => b.distance - a.distance)
 
@@ -249,21 +265,37 @@ const projectSprites = () => {
 
         if (Math.abs(sprite.angle) > radians_fov) continue
 
-        const screen_x = (sprite.angle / (radians_fov / 2)) * (half_screen.x) + (half_screen.x)
-        const sprite_size = 10_000 / sprite.distance
-
         const sprite_name = ids_registry.sprites[sprite.id]
         const current_sprite = images.map_sprites[sprite_name].img
         const current_sprite_mask = images.map_sprites[`${sprite_name}_mask`].img
         const sprite_data = sprites_data[sprite_name]
 
+        const screen_x = (sprite.angle / (radians_fov / 2)) * (half_screen.x) + (half_screen.x)
+        const sprite_size = sprite_data.size / sprite.distance
+
         const height_offset = sprite_data.height * (sprite_size / 100)
-        let alpha;
+        
+        let alpha, y_offset, sprite_height;
 
         if (current_item === 'lighter'){
             alpha = Math.max(0, sprite.distance / 350) + lighter.flickering.value
         } else {
             alpha = sparkling.is_active ? 0 : Math.max(.7, sprite.distance / 100)
+        }
+
+        if (sprite_data.flat){
+            y_offset = 0
+            sprite_height = current_sprite.height
+        } else {
+            let degrees_angle = (sprite.angle_diff * (180 / Math.PI) + 180) + 10
+            if (degrees_angle < 0){
+                degrees_angle = 360
+            } else if (degrees_angle > 359){
+                degrees_angle = 0
+            }
+            y_offset = parseInt(degrees_angle / 15) // 30 degrés par section pour chaque côté (car 12 * 30 === 360)
+            test_output = y_offset
+            sprite_height = (current_sprite.height / multi_directional_frames)
         }
         
         for (let i = 0 ; i < current_sprite.width ; i++){
@@ -278,8 +310,8 @@ const projectSprites = () => {
             
             ctx.drawImage(
                 current_sprite,
-                i * 1, 0,
-                1, current_sprite.height,
+                i * 1, y_offset * sprite_height,
+                1, sprite_height,
                 screen_slice_x, top_y,
                 scale_x, sprite_size
             )
@@ -287,8 +319,8 @@ const projectSprites = () => {
             ctx.globalAlpha = alpha
             ctx.drawImage(
                 current_sprite_mask,
-                i * 1, 0,
-                1, current_sprite_mask.height,
+                i * 1, y_offset * sprite_height,
+                1, sprite_height,
                 screen_slice_x, top_y,
                 scale_x, sprite_size
             )
@@ -361,10 +393,10 @@ const draw = (timeStamp) => {
 const initAndRun = async () => {
     try {
         canvas.addEventListener('click', () => {
-            canvas.requestFullscreen().then(()=>{
-                canvas.requestPointerLock()
-            })
-            // canvas.requestPointerLock()
+            // canvas.requestFullscreen().then(()=>{
+            //     canvas.requestPointerLock()
+            // })
+            canvas.requestPointerLock()
         })
         await loadResources(ctx, images)
         draw()

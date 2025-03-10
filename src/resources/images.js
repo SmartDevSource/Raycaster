@@ -4,6 +4,10 @@ export const images = {
             path: `../../assets/gfx/textures/bricks_1.png`,
             img: new Image(),
         },
+        grass_wall: {
+            path: `../../assets/gfx/textures/grass_wall.png`,
+            img: new Image(),
+        },
     },
     hud_sprites: {
         lighter: {
@@ -18,6 +22,14 @@ export const images = {
         },
         barrel_mask: {
             path: `../../assets/gfx/sprites/map/barrel_mask.png`,
+            img: new Image(),
+        },
+        crate: {
+            path: `../../assets/gfx/sprites/map/crate.png`,
+            img: new Image(),
+        },
+        crate_mask: {
+            path: `../../assets/gfx/sprites/map/crate_mask.png`,
             img: new Image(),
         },
     },
