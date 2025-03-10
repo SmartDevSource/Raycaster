@@ -81,13 +81,13 @@ const checkCollision = (x, y) => {
         {x, y: y + camera.radius},
         {x, y: y - camera.radius}
     ]
-    return check_points.some(p => getMapCell(p.y, p.x).startsWith('w'))
+    return check_points.some(p => getMapCell(p.y, p.x) != 0)
 }
 
 const getMapCell = (y, x) => {
     const y_grid = Math.floor(y / map.grid_offset)
     const x_grid = Math.floor(x / map.grid_offset)
     if (x_grid === -1 || y_grid === -1)
-        return 'w'
-    return map.tiles[y_grid][x_grid]
+        return 1
+    return map.walls[y_grid][x_grid]
 }

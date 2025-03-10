@@ -1,5 +1,5 @@
 export const sprites_data = {
-    s01: {
+    barrel: {
         height: -120
     }
 }

@@ -1,4 +1,4 @@
-import { map, getMapSprites, getMapTiles } from '../map.js'
+import { map, getMapSprites } from '../map.js'
 import { sprites_data } from '../resources/sprites_data.js'
 import { draw2dLine, drawCircle, drawHud } from './draw.js'
 import { images } from '../resources/images.js'
@@ -6,6 +6,7 @@ import { clock, sparkling, lighter } from '../structs.js'
 import { camera } from './camera.js'
 import { inputListener } from '../input_handler.js'
 import { loadResources } from '../resources/resources_handler.js'
+import { ids_registry } from './id_registry.js'
 
 const canvas = document.getElementById('canvas')
 const ctx = canvas.getContext('2d')
@@ -21,29 +22,20 @@ const half_screen = {x: canvas.width / 2, y: canvas.height / 2}
 const floor_height = 750
 const z_buffer = new Array(canvas.width)
 
-const current_item = ''
-
-const map_tiles = getMapTiles()
-console.log(map_tiles)
+const current_item = 'lighter'
 
 const map_sprites = getMapSprites()
 console.log("map_sprites", map_sprites)
 
 let test_output = ''
 
-const get2dPlaneColor = tile_type => {
-    switch(true){
-        case tile_type.startsWith('w'): return 'white'
-        case tile_type.startsWith('f'): return 'lime'
-    }
-}
 const draw2dMap = () => {
     ctx.save()
     ctx.scale(.2, .2)
-    for (let y = 0 ; y < map.tiles.length ; y++){
-        for (let x = 0 ; x < map.tiles[y].length ; x++){
-            if (map.tiles[y][x] !== '___'){
-                ctx.strokeStyle = get2dPlaneColor(map.tiles[y][x])
+    for (let y = 0 ; y < map.walls.length ; y++){
+        for (let x = 0 ; x < map.walls[y].length ; x++){
+            if (map.walls[y][x] !== 0){
+                ctx.strokeStyle = 'white'
                 ctx.lineWidth = 5
                 ctx.strokeRect(
                     (x * map.grid_offset),
@@ -160,8 +152,9 @@ const projectCamera = () => {
                 map_y += step_y
                 side = 1
             }
-            if (map_tiles[map_y][map_x] != '___'){
-                tile_content = map.tiles[map_y][map_x]
+            if (map.walls[map_y][map_x] != 0){
+                const wall_data = map.walls[map_y][map_x]
+                tile_content = ids_registry.walls[wall_data]
                 hit = true
             }
         }
@@ -181,7 +174,8 @@ const projectCamera = () => {
             (camera.position.y / map.grid_offset + perp_wall_dist * ray_dir_y) % 1 :
             (camera.position.x / map.grid_offset + perp_wall_dist * ray_dir_x) % 1
 
-        const current_texture = images.textures[tile_content]
+        const current_texture = images.walls[tile_content]
+        console.log(current_texture.img.width)
         texture_offset = Math.floor(texture_offset * current_texture.img.width)
 
         ctx.drawImage(
@@ -258,9 +252,10 @@ const projectSprites = () => {
         const screen_x = (sprite.angle / (radians_fov / 2)) * (half_screen.x) + (half_screen.x)
         const sprite_size = 10_000 / sprite.distance
 
-        const current_sprite = images.map_sprites[sprite.name].img
-        const current_sprite_mask = images.map_sprites[`${sprite.name}_mask`].img
-        const sprite_data = sprites_data[sprite.name]
+        const sprite_name = ids_registry.sprites[sprite.id]
+        const current_sprite = images.map_sprites[sprite_name].img
+        const current_sprite_mask = images.map_sprites[`${sprite_name}_mask`].img
+        const sprite_data = sprites_data[sprite_name]
 
         const height_offset = sprite_data.height * (sprite_size / 100)
         let alpha;
