@@ -1,6 +1,6 @@
 import { Sprite } from "./engine/classes/sprite.js"
 import { sprites_data } from "./resources/sprites_data.js"
-import { ids_registry } from "./engine/id_registry.js"
+import { ids_registry } from "./resources/id_registry.js"
 
 export const map = {
     walls: [

@@ -1,12 +1,12 @@
 import { map, getMapSprites } from '../map.js'
-import { sprites_data } from '../resources/sprites_data.js'
 import { draw2dLine, drawCircle, drawHud } from './draw.js'
 import { images } from '../resources/images.js'
 import { clock, sparkling, lighter } from '../structs.js'
 import { camera } from './camera.js'
 import { inputListener } from '../input_handler.js'
 import { loadResources } from '../resources/resources_handler.js'
-import { ids_registry } from './id_registry.js'
+import { ids_registry } from '../resources/id_registry.js'
+import { Player } from './classes/player.js'
 
 // const project_camera_worker = new Worker("/workers/project_camera.js")
 
@@ -24,9 +24,16 @@ const half_screen = {x: canvas.width / 2, y: canvas.height / 2}
 const floor_height = 750
 const z_buffer = new Array(canvas.width)
 
+const sprites = getMapSprites()
 const current_item = 'lighter'
 
-const sprites = getMapSprites()
+const player_test = new Player({
+    id: crypto.randomUUID(),
+    position: {x: 120, y: 400},
+    angle: 0
+})
+sprites.push(player_test.sprite)
+
 console.log("sprites", sprites)
 
 let test_output = ''
@@ -253,29 +260,31 @@ const projectSprites = () => {
         sprite.distance = Math.abs(dx * Math.cos(camera.rotation.x) + dy * Math.sin(camera.rotation.x))
         sprite.dx = dx
         sprite.dy = dy
-        sprite.angle = angle_diff - camera.rotation.x
+        sprite.angle_to_camera = angle_diff - camera.rotation.x
         sprite.angle_diff = angle_diff
     })
 
     sprites.sort((a, b) => b.distance - a.distance)
 
     for (let sprite of sprites){
-        if (sprite.angle < -Math.PI) sprite.angle += 2 * Math.PI
-        if (sprite.angle > Math.PI) sprite.angle -= 2 * Math.PI
+        if (sprite.angle_to_camera < -Math.PI) sprite.angle_to_camera += 2 * Math.PI
+        if (sprite.angle_to_camera > Math.PI) sprite.angle_to_camera -= 2 * Math.PI
 
-        if (Math.abs(sprite.angle) > radians_fov) continue
+        if (Math.abs(sprite.angle_to_camera) > radians_fov) continue
 
         const sprite_type = sprite.type
 
         const current_sprite = images[sprite_type][sprite.name].img
         const current_sprite_mask = images[sprite_type][`${sprite.name}_mask`].img
 
-        const screen_x = (sprite.angle / (radians_fov / 2)) * (half_screen.x) + (half_screen.x)
+        const screen_x = (sprite.angle_to_camera / (radians_fov / 2)) * (half_screen.x) + (half_screen.x)
         const sprite_size = sprite.draw_data.size / sprite.distance
 
-        const height_offset = sprite.draw_data.height * (sprite_size / 100)
+        const height_offset = sprite.draw_data.z_axis * (sprite_size / 100)
         
-        let alpha, y_offset, sprite_height;
+        let alpha = 0
+        let x_offset = 1
+        let sprite_height = sprite.draw_data.height
 
         if (current_item === 'lighter'){
             alpha = Math.max(0, sprite.distance / 350) + lighter.flickering.value
@@ -283,34 +292,26 @@ const projectSprites = () => {
             alpha = sparkling.is_active ? 0 : Math.max(.7, sprite.distance / 100)
         }
 
-        if (sprite.draw_data.flat){
-            y_offset = 0
-            sprite_height = current_sprite.height
-        } else {
-            let degrees_angle = (sprite.angle_diff * (180 / Math.PI) + 180) + 10
-            if (degrees_angle < 0){
-                degrees_angle = 360
-            } else if (degrees_angle > 359){
-                degrees_angle = 0
-            }
-            y_offset = parseInt(degrees_angle / sprite.draw_data.degrees_variation)
-            test_output = y_offset
-            sprite_height = (current_sprite.height / sprite.draw_data.frames_count)
+        if (!sprite.draw_data.flat){
+            let degrees_angle = (sprite.angle_diff + sprite.angle) * (180 / Math.PI) + 180
+            degrees_angle = ((degrees_angle % 360) + 360) % 360
+            let index = parseInt(degrees_angle / sprite.draw_data.degrees_variation)
+            x_offset = (sprite.draw_data.frames.horizontal - 1 - index) * sprite.draw_data.width
         }
-        
-        for (let i = 0 ; i < current_sprite.width ; i++){
-            const slice_width = sprite_size / current_sprite.width
+
+        for (let i = 0 ; i < sprite.draw_data.width ; i++){
+            const slice_width = sprite_size / sprite.draw_data.width
             const screen_slice_x = Math.floor(screen_x - (sprite_size / 2) + (i * slice_width))
 
             if (screen_slice_x < 0 || screen_slice_x > canvas.width) continue
             if (z_buffer[screen_slice_x] < sprite.distance) continue
 
             const top_y = (half_screen.y - sprite_size / 2) + camera.rotation.y - height_offset
-            const scale_x = Math.ceil(sprite_size / current_sprite.width)
-            
+            const scale_x = Math.ceil(sprite_size / sprite.draw_data.width)
+
             ctx.drawImage(
                 current_sprite,
-                i * 1, y_offset * sprite_height,
+                x_offset + (i * 1), sprite.current_frame * sprite_height,
                 1, sprite_height,
                 screen_slice_x, top_y,
                 scale_x, sprite_size
@@ -319,13 +320,12 @@ const projectSprites = () => {
             ctx.globalAlpha = alpha
             ctx.drawImage(
                 current_sprite_mask,
-                i * 1, y_offset * sprite_height,
+                x_offset + (i * 1), sprite.current_frame * sprite_height,
                 1, sprite_height,
                 screen_slice_x, top_y,
                 scale_x, sprite_size
             )
             ctx.globalAlpha = 1
-
         }
     }
 }
@@ -381,6 +381,7 @@ const draw = (timeStamp) => {
     updateClock(timeStamp)
     inputListener()
     if (!isNaN(clock.delta_time)){
+        player_test.updateTestMove(clock)
         drawScene()
     }
     // FPS //
