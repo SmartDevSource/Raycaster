@@ -34,7 +34,7 @@ export class Player{
         this.sprite.position.y = this.position.y
 
         this.timers.move += clock.delta_time
-        this.timers.anim += clock.delta_time
+        this.timers.anim += clock.delta_time 
         
         if (this.timers.anim > .2){
             if (this.sprite.current_frame < this.sprite.draw_data.frames.vertical -1){
