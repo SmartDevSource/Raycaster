@@ -33,6 +33,16 @@ export const images = {
             img: new Image(),
         },
     },
+    character_sprites: {
+        soldier: {
+            path: `../../assets/gfx/sprites/characters/soldier.png`,
+            img: new Image(),
+        },
+        soldier_mask: {
+            path: `../../assets/gfx/sprites/characters/soldier_mask.png`,
+            img: new Image(),
+        },
+    },
     skyboxes: {
         sky: {
             path: `../../assets/gfx/skyboxes/sky.png`,

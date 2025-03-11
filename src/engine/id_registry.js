@@ -5,6 +5,7 @@ export const ids_registry = {
     },
     sprites: {
         1: 'barrel',
-        2: 'crate'
+        2: 'crate',
+        3: 'soldier'
     }
 }

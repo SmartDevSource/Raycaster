@@ -20,15 +20,14 @@ const width_fov = radians_fov / screen_resolution.w
 canvas.width = screen_resolution.w
 canvas.height = screen_resolution.h
 const half_screen = {x: canvas.width / 2, y: canvas.height / 2}
-const multi_directional_frames = 24
 
 const floor_height = 750
 const z_buffer = new Array(canvas.width)
 
 const current_item = 'lighter'
 
-const map_sprites = getMapSprites()
-console.log("map_sprites", map_sprites)
+const sprites = getMapSprites()
+console.log("sprites", sprites)
 
 let test_output = ''
 
@@ -247,7 +246,7 @@ const projectCamera = () => {
     }
 }
 const projectSprites = () => {
-    map_sprites.map(sprite => {
+    sprites.map(sprite => {
         const dx = sprite.position.x - camera.position.x
         const dy = sprite.position.y - camera.position.y
         const angle_diff = Math.atan2(dy, dx)
@@ -257,23 +256,24 @@ const projectSprites = () => {
         sprite.angle = angle_diff - camera.rotation.x
         sprite.angle_diff = angle_diff
     })
-    map_sprites.sort((a, b) => b.distance - a.distance)
 
-    for (let sprite of map_sprites){
+    sprites.sort((a, b) => b.distance - a.distance)
+
+    for (let sprite of sprites){
         if (sprite.angle < -Math.PI) sprite.angle += 2 * Math.PI
         if (sprite.angle > Math.PI) sprite.angle -= 2 * Math.PI
 
         if (Math.abs(sprite.angle) > radians_fov) continue
 
-        const sprite_name = ids_registry.sprites[sprite.id]
-        const current_sprite = images.map_sprites[sprite_name].img
-        const current_sprite_mask = images.map_sprites[`${sprite_name}_mask`].img
-        const sprite_data = sprites_data[sprite_name]
+        const sprite_type = sprite.type
+
+        const current_sprite = images[sprite_type][sprite.name].img
+        const current_sprite_mask = images[sprite_type][`${sprite.name}_mask`].img
 
         const screen_x = (sprite.angle / (radians_fov / 2)) * (half_screen.x) + (half_screen.x)
-        const sprite_size = sprite_data.size / sprite.distance
+        const sprite_size = sprite.draw_data.size / sprite.distance
 
-        const height_offset = sprite_data.height * (sprite_size / 100)
+        const height_offset = sprite.draw_data.height * (sprite_size / 100)
         
         let alpha, y_offset, sprite_height;
 
@@ -283,7 +283,7 @@ const projectSprites = () => {
             alpha = sparkling.is_active ? 0 : Math.max(.7, sprite.distance / 100)
         }
 
-        if (sprite_data.flat){
+        if (sprite.draw_data.flat){
             y_offset = 0
             sprite_height = current_sprite.height
         } else {
@@ -293,9 +293,9 @@ const projectSprites = () => {
             } else if (degrees_angle > 359){
                 degrees_angle = 0
             }
-            y_offset = parseInt(degrees_angle / 15) // 30 degrés par section pour chaque côté (car 12 * 30 === 360)
+            y_offset = parseInt(degrees_angle / sprite.draw_data.degrees_variation)
             test_output = y_offset
-            sprite_height = (current_sprite.height / multi_directional_frames)
+            sprite_height = (current_sprite.height / sprite.draw_data.frames_count)
         }
         
         for (let i = 0 ; i < current_sprite.width ; i++){

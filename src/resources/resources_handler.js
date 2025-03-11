@@ -13,6 +13,7 @@ export const loadResources = async (ctx, images) => {
         ...images.walls,
         ...images.hud_sprites,
         ...images.map_sprites,
+        ...images.characters_sprites,
         ...images.skyboxes
         }
     ).map(loadImage)

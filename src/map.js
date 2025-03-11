@@ -1,3 +1,7 @@
+import { Sprite } from "./engine/classes/sprite.js"
+import { sprites_data } from "./resources/sprites_data.js"
+import { ids_registry } from "./engine/id_registry.js"
+
 export const map = {
     walls: [
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -80,16 +84,20 @@ export const getMapSprites = () => {
         for (let x = 0 ; x < map.sprites[y].length ; x++){
             const cell_content = map.sprites[y][x]
             if (cell_content !== 0){
+                const sprite_id = cell_content
                 const cell_x = (x * map.grid_offset) + map.grid_offset / 2
                 const cell_y = (y * map.grid_offset) + map.grid_offset / 2
-                sprites_map.push({
-                    id: cell_content,
+                const sprite_name = ids_registry.sprites[sprite_id]
+                const sprite_data = sprites_data[sprite_name]
+                const new_sprite = new Sprite({
+                    id: crypto.randomUUID(),
+                    type: 'map_sprites',
+                    name: sprite_name,
+                    sprite_id: cell_content,
                     position: {x: cell_x, y: cell_y},
-                    distance: 0,
-                    dx: 0,
-                    dy: 0,
-                    angle: 0
+                    draw_data: sprite_data
                 })
+                sprites_map.push(new_sprite)
             }
         }
     }
