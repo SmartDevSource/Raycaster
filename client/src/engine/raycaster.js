@@ -1,14 +1,12 @@
+import { camera } from './camera.js'
 import { map, getMapSprites } from '../map.js'
 import { draw2dLine, drawCircle, drawHud } from './draw.js'
 import { images } from '../resources/images.js'
 import { clock, sparkling, lighter } from '../structs.js'
-import { camera } from './camera.js'
 import { inputListener } from '../input_handler.js'
 import { loadResources } from '../resources/resources_handler.js'
-import { ids_registry } from '../resources/id_registry.js'
+import { ids_registries } from '../resources/ids_registries.js'
 import { Player } from './classes/player.js'
-
-// const project_camera_worker = new Worker("/workers/project_camera.js")
 
 const canvas = document.getElementById('canvas')
 const ctx = canvas.getContext('2d')
@@ -118,18 +116,6 @@ const drawFloor = () => {
     )
 }
 const projectCamera = () => {
-    // project_camera_worker.postMessage({
-    //     map,
-    //     z_buffer,
-    //     ids_registry,
-    //     camera_rotation: camera.rotation,
-    //     camera_position: camera.position,
-    //     canvas_width: canvas.width,
-    //     canvas_height: canvas.height,
-    //     width_fov,
-    //     radians_fov
-    // })
-
     for (let w = 0; w <= canvas.width; w++) {
         const ray_angle = camera.rotation.x + radians_fov / 2 - w * width_fov
         const ray_dir_x = Math.cos(ray_angle)
@@ -175,7 +161,7 @@ const projectCamera = () => {
             }
             if (map.walls[map_y][map_x] != 0){
                 const wall_data = map.walls[map_y][map_x]
-                tile_content = ids_registry.walls[wall_data]
+                tile_content = ids_registries.walls[wall_data]
                 hit = true
             }
         }
@@ -274,17 +260,17 @@ const projectSprites = () => {
 
         const sprite_type = sprite.type
 
-        const current_sprite = images[sprite_type][sprite.name].img
-        const current_sprite_mask = images[sprite_type][`${sprite.name}_mask`].img
+        const current_sprite = images[sprite_type][sprite.data.name].img
+        const current_sprite_mask = images[sprite_type][`${sprite.data.name}_mask`].img
 
         const screen_x = (sprite.angle_to_camera / (radians_fov / 2)) * (half_screen.x) + (half_screen.x)
-        const sprite_size = sprite.draw_data.size / sprite.distance
+        const sprite_size = sprite.data.size / sprite.distance
 
-        const height_offset = sprite.draw_data.z_axis * (sprite_size / 100)
+        const height_offset = sprite.data.z_axis * (sprite_size / 100)
         
         let alpha = 0
         let x_offset = 1
-        let sprite_height = sprite.draw_data.height
+        let sprite_height = sprite.data.height
 
         if (current_item === 'lighter'){
             alpha = Math.max(0, sprite.distance / 350) + lighter.flickering.value
@@ -292,22 +278,22 @@ const projectSprites = () => {
             alpha = sparkling.is_active ? 0 : Math.max(.7, sprite.distance / 100)
         }
 
-        if (!sprite.draw_data.flat){
+        if (!sprite.data.flat){
             let degrees_angle = (sprite.angle_diff + sprite.angle) * (180 / Math.PI) + 180
             degrees_angle = ((degrees_angle % 360) + 360) % 360
-            let index = parseInt(degrees_angle / sprite.draw_data.degrees_variation)
-            x_offset = (sprite.draw_data.frames.horizontal - 1 - index) * sprite.draw_data.width
+            let index = parseInt(degrees_angle / sprite.data.degrees_variation)
+            x_offset = (sprite.data.frames.horizontal - 1 - index) * sprite.data.width
         }
 
-        for (let i = 0 ; i < sprite.draw_data.width ; i++){
-            const slice_width = sprite_size / sprite.draw_data.width
+        for (let i = 0 ; i < sprite.data.width ; i++){
+            const slice_width = sprite_size / sprite.data.width
             const screen_slice_x = Math.floor(screen_x - (sprite_size / 2) + (i * slice_width))
 
             if (screen_slice_x < 0 || screen_slice_x > canvas.width) continue
             if (z_buffer[screen_slice_x] < sprite.distance) continue
 
             const top_y = (half_screen.y - sprite_size / 2) + camera.rotation.y - height_offset
-            const scale_x = Math.ceil(sprite_size / sprite.draw_data.width)
+            const scale_x = Math.ceil(sprite_size / sprite.data.width)
 
             ctx.drawImage(
                 current_sprite,
@@ -360,21 +346,11 @@ const updateLightFlickering = () => {
     }
     // console.log("lighter.flickering.value", lighter.flickering.value)
 }
-const drawScene = () => {
-    drawSky()
-    drawFloor()
-    projectCamera()
-    projectSprites()
-    updateSparkling()
-    updateLightFlickering()
-    draw2dMap()
-    drawHud(ctx, current_item, images.hud_sprites)
-}
 const updateClock = timeStamp => {
     clock.delta_time = Math.min((timeStamp - clock.last_update) / 1000, 0.016)
     clock.last_update = timeStamp
 }
-const draw = (timeStamp) => {
+export const draw = (timeStamp) => {
     requestAnimationFrame(draw)
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     const fps = Math.round(1 / ((timeStamp - clock.last_update) / 1000))
@@ -382,7 +358,14 @@ const draw = (timeStamp) => {
     inputListener()
     if (!isNaN(clock.delta_time)){
         player_test.updateTestMove(clock)
-        drawScene()
+        drawSky()
+        drawFloor()
+        projectCamera()
+        projectSprites()
+        updateSparkling()
+        updateLightFlickering()
+        draw2dMap()
+        drawHud(ctx, current_item, images.hud_sprites)
     }
     // FPS //
     ctx.fillStyle = 'white'
@@ -391,7 +374,7 @@ const draw = (timeStamp) => {
     // TEST OUTPUT //
     ctx.fillText(test_output, 110, 80)
 }
-const initAndRun = async () => {
+export const initAndRun = async () => {
     try {
         canvas.addEventListener('click', () => {
             // canvas.requestFullscreen().then(()=>{
@@ -400,10 +383,7 @@ const initAndRun = async () => {
             canvas.requestPointerLock()
         })
         await loadResources(ctx, images)
-        draw()
     } catch (err) {
         console.log(`Error while loading resources : ${err}`)
     }
 }
-
-initAndRun()

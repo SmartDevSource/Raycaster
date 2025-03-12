@@ -3,7 +3,9 @@ const path = require('path')
 const express = require('express')
 const app = express()
 const server = require('http').createServer(app)
-const socket_io = require('socket.io')
+const io = require('socket.io')(server)
+
+const { handleSockets } = require('./src/sockets_handler.js')
 
 const PORT = process.env.PORT
 
@@ -16,3 +18,5 @@ server.listen(PORT, () => {
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'client', 'index.html'))
 })
+
+handleSockets(io)

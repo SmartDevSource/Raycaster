@@ -1,6 +1,5 @@
 import { Sprite } from "./sprite.js"
-import { sprites_data } from "../../resources/sprites_data.js"
-import { ids_registry } from "../../resources/id_registry.js"
+import { ids_registries } from "../../resources/ids_registries.js"
 
 export class Player{
     constructor({id, position, angle}){
@@ -14,17 +13,15 @@ export class Player{
         this.timers = {move: 0, anim: 0}
     }
     initSprite(){
-        const sprite_name = ids_registry.sprites[this.sprite_id]
-        const sprite_data = sprites_data[sprite_name]
+        const sprite_data = ids_registries.sprites[this.sprite_id]
 
         return new Sprite({
             id: this.id,
             type: 'character_sprites',
-            name: sprite_name,
             sprite_id: this.sprite_id,
             position: {x: this.position.x, y: this.position.y},
             angle: this.angle,
-            draw_data: sprite_data
+            data: sprite_data
         })
     }
     updateTestMove(clock){
@@ -37,7 +34,7 @@ export class Player{
         this.timers.anim += clock.delta_time 
         
         if (this.timers.anim > .2){
-            if (this.sprite.current_frame < this.sprite.draw_data.frames.vertical -1){
+            if (this.sprite.current_frame < this.sprite.data.frames.vertical -1){
                 this.sprite.current_frame ++
             } else {
                 this.sprite.current_frame = 0
