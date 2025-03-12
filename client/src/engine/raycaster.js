@@ -32,8 +32,6 @@ const player_test = new Player({
 })
 sprites.push(player_test.sprite)
 
-console.log("sprites", sprites)
-
 let test_output = ''
 
 const draw2dMap = () => {

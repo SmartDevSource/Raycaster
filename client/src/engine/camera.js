@@ -1,5 +1,4 @@
 export const camera = {
-    angle: -1.6,
     position: {x: 100, y: 512},
     rotation: {x: -Math.PI / 2, y: 0},
     max_y_angle: 450,

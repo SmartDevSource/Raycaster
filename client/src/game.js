@@ -9,6 +9,12 @@ const handleSockets = () => {
     socket.on('map_data', map_data => {
         initializeGame(map_data)
     })
+    socket.on('players', players => {
+        console.log(JSON.parse(players))
+    })
+    socket.on('player_leave', id => {
+        console.log(`Player with id ${id} leave the game`)
+    })
 }
 
 const initializeGame = async (map_data) => {
