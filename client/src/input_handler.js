@@ -1,6 +1,7 @@
 import { keys, mouse, clock } from './structs.js'
+import { ids_registries } from './resources/ids_registries.js'
 import { camera } from './engine/camera.js'
-import { map } from './map.js'
+import { getMap } from './map.js'
 
 const mouse_x_factor = 0.0025
 
@@ -85,9 +86,13 @@ const checkCollision = (x, y) => {
 }
 
 const getMapCell = (y, x) => {
+    const map = getMap()
     const y_grid = Math.floor(y / map.grid_offset)
     const x_grid = Math.floor(x / map.grid_offset)
-    if (x_grid === -1 || y_grid === -1)
-        return 1
-    return map.walls[y_grid][x_grid]
+    if (x_grid < 0 || y_grid < 0) return true
+    if (map.walls[y_grid][x_grid] !== 0) return true
+
+    const sprite_data = ids_registries.sprites[map.sprites[y_grid][x_grid]]
+    if (map.sprites[y_grid][x_grid] !== 0 && !sprite_data.traversable) return true
+    return false
 }

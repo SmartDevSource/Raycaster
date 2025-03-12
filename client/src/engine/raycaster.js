@@ -1,5 +1,5 @@
 import { camera } from './camera.js'
-import { map, getMapSprites } from '../map.js'
+import { setMap, map, setMapSprites } from '../map.js'
 import { draw2dLine, drawCircle, drawHud } from './draw.js'
 import { images } from '../resources/images.js'
 import { clock, sparkling, lighter } from '../structs.js'
@@ -22,7 +22,7 @@ const half_screen = {x: canvas.width / 2, y: canvas.height / 2}
 const floor_height = 750
 const z_buffer = new Array(canvas.width)
 
-const sprites = getMapSprites()
+const sprites = []
 const current_item = 'lighter'
 
 const player_test = new Player({
@@ -374,8 +374,10 @@ export const draw = (timeStamp) => {
     // TEST OUTPUT //
     ctx.fillText(test_output, 110, 80)
 }
-export const initAndRun = async () => {
+export const initializeScene = async (map_data) => {
     try {
+        setMap(JSON.parse(map_data))
+        setMapSprites(sprites)
         canvas.addEventListener('click', () => {
             // canvas.requestFullscreen().then(()=>{
             //     canvas.requestPointerLock()
@@ -383,6 +385,9 @@ export const initAndRun = async () => {
             canvas.requestPointerLock()
         })
         await loadResources(ctx, images)
+        if (map){
+            draw()
+        }
     } catch (err) {
         console.log(`Error while loading resources : ${err}`)
     }
